@@ -2,15 +2,34 @@
 import sys
 import queue
 import random
+import math
 from pathlib			import Path
-from PySide6.QtCore		import QTimer
+from PySide6.QtCore		import QTimer, QObject, Slot, Signal, Property
 from PySide6.QtGui		import QGuiApplication
-from PySide6.QtQml		import QQmlApplicationEngine
+from PySide6.QtQml		import QQmlApplicationEngine, QmlElement
 from PySide6.QtQuick	import QQuickImageProvider
 from PIL				import Image, ImageQt
 
+QML_IMPORT_NAME = "nl.jorisgoosen.Segregation"
+QML_IMPORT_MAJOR_VERSION = 1
 
-classroom	= Image.new("RGBA", (200, 200), (0, 0, 0, 0))
+@QmlElement
+class Bridge(QObject):
+	def __init__(self, intolerance=0.5, parent=None):
+		super().__init__(parent)
+		self._intolerance = intolerance
+
+	@Property('float')
+	def intolerance(self):
+		return self._intolerance
+
+	# Define the setter of the 'name' property.
+	@intolerance.setter
+	def intolerance(self, intolerance):
+		self._intolerance = intolerance
+
+
+classroom	= Image.new("RGBA", (100, 100), (0, 0, 0, 0))
 prio		= queue.Queue()
 
 
@@ -42,8 +61,14 @@ def posIsOk(pos):
 def randomPos():
 	return (random.randint(0, classroom.width-1), random.randint(0, classroom.height-1))
 
+def randomPosAtMaxDist(posDist, distance=2.5):
+	while True:
+		pos = (random.randint(0, classroom.width-1), random.randint(0, classroom.height-1))
+		if math.dist(posDist, pos) < distance:
+			return pos
+
 def initClassroom():
-	maxKids = (classroom.width * classroom.height) / 3
+	maxKids = (classroom.width * classroom.height) * 0.75
 	print(maxKids)
 	kiddos  = set()
 	while len(kiddos) < maxKids:
@@ -55,9 +80,10 @@ def initClassroom():
 				col = (random.randint(0,1)*255, random.randint(0,1)*255, random.randint(0,1)*255, 255) #(random.random(), random.random(), random.random(), 1.0)
 			placeAgent(newKid, col)
 
-intolerance = 0.5
+intolerance = 0.75
+brug = Bridge(intolerance)
 
-def updateClassroom():
+def checkForPotentialMover():
 	potMover	= prio.get()
 	potMoverCol = getColor(potMover)
 	if potMoverCol is None:
@@ -68,7 +94,7 @@ def updateClassroom():
 		for relY in range(-1, 2):
 			absX = potMover[0] + relX
 			absY = potMover[1] + relY
-			if absX >= 0 and absY >= 0 and not (relX == 0 and relY == 0) and absX < classroom.width and absY < classroom.height:
+			if absX >= 0 and absY >= 0 and absX < classroom.width and absY < classroom.height:#and not (relX == 0 and relY == 0):
 				neighbourColor = getColor((absX,absY))
 				if neighbourColor is not None:
 					similars.append(neighbourColor)
@@ -78,12 +104,20 @@ def updateClassroom():
 		if similar == potMoverCol:
 			similarNeighbours += 1
 
-	ratio = similarNeighbours / max(1, len(similars))
+	if len(similars) == 0:
+		#they might be lonely but they cant hate their neighbours cause they aint got any
+		#could be a nice place for extra functionality related to how crowded people want it around them
+		ratio = 1
+	else:
+		ratio = similarNeighbours / len(similars)
 
-	if ratio < intolerance:
+	if ratio < brug._intolerance:
 		#so this agent has decided to move!
 		safety = 0
 
+		#print(ratio)
+
+		#while not placeAgent(randomPosAtMaxDist(potMover), potMoverCol) and safety < 1000:
 		while not placeAgent(randomPos(), potMoverCol) and safety < 1000:
 			safety += 1
 
@@ -100,7 +134,9 @@ def updateClassroom():
 	#print(prio.qsize())
 
 
-
+def updateClassroom():
+	for a in range(10):
+		checkForPotentialMover();
 
 
 class ImgProvider(QQuickImageProvider):
@@ -140,6 +176,7 @@ if __name__ == "__main__":
 	timer.start()
 
 	engine.rootContext().setContextProperty("revision", revision)
+	engine.rootContext().setContextProperty("brug",		brug)
 
 	engine.load(qml_file)
 
