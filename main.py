@@ -26,7 +26,7 @@ class Bridge(QObject):
 		self._intolerance = 0.5
 		self._similarity = 0.333333
 		self._maxMigration = 0
-		self._maxKids = 0.75
+		self._maxKids = 0.5
 
 	@Property('float')
 	def intolerance(self):
@@ -66,7 +66,7 @@ class Bridge(QObject):
 		sneakyResetFunction()
 
 brug		= Bridge()
-classroom	= Image.new("RGBA", (200, 200), (0, 0, 0, 0))
+classroom	= Image.new("RGBA", (128, 128), (0, 0, 0, 0))
 prio		= queue.Queue()
 
 
@@ -129,7 +129,7 @@ def checkForPotentialMover():
 	if potMoverCol is None:
 		app.exit()
 
-	similars	= []
+	neighbours	= []
 	for relX in range(-1, 2):
 		for relY in range(-1, 2):
 			absX = potMover[0] + relX
@@ -137,39 +137,58 @@ def checkForPotentialMover():
 			if absX >= 0 and absY >= 0 and absX < classroom.width and absY < classroom.height:#and not (relX == 0 and relY == 0):
 				neighbourColor = getColor((absX,absY))
 				if neighbourColor is not None:
-					similars.append(neighbourColor)
+					neighbours.append(neighbourColor)
 
-	similarNeighbours = 0
-	for similar in similars:
-		if math.dist(similar, potMoverCol) <= brug._similarity * 441.6729559300637:
-			similarNeighbours += 1
+	similarNeighbours = []
+	for neighbour in neighbours:
+		if False:
+			simDiff = (abs(neighbour[0]-potMoverCol[0])/ 255.0, abs(neighbour[1]-potMoverCol[1])/ 255.0, abs(neighbour[2]-potMoverCol[2])/ 255.0)
+			optieA = simDiff[0] < brug._similarity
+			optieB = simDiff[1] < brug._similarity
+			optieC = simDiff[2] < brug._similarity
 
-	if len(similars) == 0:
-		#they might be lonely but they cant hate their neighbours cause they aint got any
-		#could be a nice place for extra functionality related to how crowded people want it around them
-		ratio = 1
-	else:
-		ratio = similarNeighbours / len(similars)
+			subMod = 2.0
+			optieD = simDiff[0] < brug._similarity and ( simDiff[1] < brug._similarity * subMod or simDiff[2] < brug._similarity * subMod)
+			optieE = simDiff[1] < brug._similarity and ( simDiff[0] < brug._similarity * subMod or simDiff[2] < brug._similarity * subMod)
+			optieF = simDiff[2] < brug._similarity and ( simDiff[0] < brug._similarity * subMod or simDiff[1] < brug._similarity * subMod)
 
-	if ratio < brug._intolerance:
-		#so this agent has decided to move!
-		safety = 0
+			optieA = optieA or optieB or optieC
+			optieB = optieD or optieE or optieF
 
-		#print(ratio)
-
-		#while not placeAgent(randomPosAtMaxDist(potMover), potMoverCol) and safety < 1000:
-		if brug.maxMigration <= 2.0:
-			while not placeAgent(randomPos(), potMoverCol) and safety < 1000:
-				safety += 1
+			if optieA: #and not optieB:
+				similarNeighbours.append(neighbour)
+			#elif optieB:
+			#	similarNeighbours += 0.5
 		else:
-			while not placeAgent(randomPosAtMaxDist(potMover, brug.maxMigration), potMoverCol) and safety < 1000:
-				safety += 1
+			if math.dist(neighbour, potMoverCol) / 441.6729559300637 < brug._similarity:
+				similarNeighbours.append(neighbour)
 
-		if safety > 1000:
-			print("WTF")
-			exit(123)
+	if len(neighbours) == 0:
+		#they might be lonely but they cant hate their neighbours cause they aint got any
+		#could be a nice place for extra functionality related to how crowded people want it to be around them
+		ratio = 0
+	else:
+		ratio = len(similarNeighbours) / len(neighbours)
 
-		removeAgent(potMover)
+	if ratio < brug._intolerance and len(neighbours) > 0:
+		#so this agent has decided to move!
+		tries = 0
+		maxTries = 10
+		placedIt = False
+
+		while tries < maxTries and not placedIt:
+			if brug.maxMigration <= 1.0:
+				placedIt = placeAgent(randomPos(), potMoverCol)
+			else:
+				placedIt = placeAgent(randomPosAtMaxDist(potMover, brug.maxMigration), potMoverCol)
+
+			if not placedIt:
+				tries += 1
+
+		if not placedIt:
+			prio.put(potMover)
+		else:
+			removeAgent(potMover)
 	else:
 		#Agent seems to be fine here so it aint moving!
 		prio.put(potMover)

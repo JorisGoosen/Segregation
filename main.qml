@@ -24,6 +24,7 @@ Window
 		height:						parent.height
 		width:						height
 		anchors.horizontalCenter:	parent.horizontalCenter
+		smooth:						false
 	}
 
 	Column
@@ -85,7 +86,6 @@ Window
 
 		Keys.onEscapePressed:	raam.quit() //https://open.spotify.com/track/4J8ms7TbPISBz71G5z2SGS
 
-
 		Text
 		{
 			text:	"Max migration distance and density:"
@@ -99,7 +99,6 @@ Window
 		{
 			id:			maxMigrationSlider
 			height:		40
-			//color: "purple"
 			onMoved:	brug.maxMigration = maxMigrationSlider.value
 			width:		leftColumn.width
 			value:		brug.maxMigration
