@@ -10,26 +10,63 @@ from PySide6.QtQml		import QQmlApplicationEngine, QmlElement
 from PySide6.QtQuick	import QQuickImageProvider
 from PIL				import Image, ImageQt
 
+
+_sneakyResetFunction = None
+
+def sneakyResetFunction():
+	_sneakyResetFunction()
+
 QML_IMPORT_NAME = "nl.jorisgoosen.Segregation"
 QML_IMPORT_MAJOR_VERSION = 1
 
 @QmlElement
 class Bridge(QObject):
-	def __init__(self, intolerance=0.5, parent=None):
+	def __init__(self, parent=None):
 		super().__init__(parent)
-		self._intolerance = intolerance
+		self._intolerance = 0.5
+		self._similarity = 0.333333
+		self._maxMigration = 0
+		self._maxKids = 0.75
 
 	@Property('float')
 	def intolerance(self):
 		return self._intolerance
 
-	# Define the setter of the 'name' property.
+
+	@Property('float')
+	def similarity(self):
+		return self._similarity
+
+	@Property('float')
+	def maxMigration(self):
+		return self._maxMigration
+
+	@Property('float')
+	def maxKids(self):
+		return self._maxKids
+
 	@intolerance.setter
 	def intolerance(self, intolerance):
 		self._intolerance = intolerance
 
+	@similarity.setter
+	def similarity(self, similarity):
+		self._similarity = similarity
 
-classroom	= Image.new("RGBA", (100, 100), (0, 0, 0, 0))
+	@maxMigration.setter
+	def maxMigration(self, maxMigration):
+		self._maxMigration = maxMigration
+
+	@maxKids.setter
+	def maxKids(self, maxKids):
+		self._maxKids = maxKids
+
+	@Slot()
+	def resetClass(self):
+		sneakyResetFunction()
+
+brug		= Bridge()
+classroom	= Image.new("RGBA", (200, 200), (0, 0, 0, 0))
 prio		= queue.Queue()
 
 
@@ -61,14 +98,18 @@ def posIsOk(pos):
 def randomPos():
 	return (random.randint(0, classroom.width-1), random.randint(0, classroom.height-1))
 
-def randomPosAtMaxDist(posDist, distance=2.5):
+def randomPosAtMaxDist(posDist, distance=3):
 	while True:
 		pos = (random.randint(0, classroom.width-1), random.randint(0, classroom.height-1))
 		if math.dist(posDist, pos) < distance:
 			return pos
 
 def initClassroom():
-	maxKids = (classroom.width * classroom.height) * 0.75
+	global classroom
+	global prio
+	classroom = Image.new("RGBA", (classroom.width, classroom.height), (0, 0, 0, 0))
+	prio = queue.Queue()
+	maxKids = (classroom.width * classroom.height) * brug._maxKids
 	print(maxKids)
 	kiddos  = set()
 	while len(kiddos) < maxKids:
@@ -77,11 +118,10 @@ def initClassroom():
 			kiddos |= set([(newKid[0], newKid[1])])
 			col = (0, 0, 0, 0)
 			while col[0] == 0 and col[1] == 0 and col[2] == 0:
-				col = (random.randint(0,1)*255, random.randint(0,1)*255, random.randint(0,1)*255, 255) #(random.random(), random.random(), random.random(), 1.0)
+				col = (random.randint(0,255), random.randint(0,255), random.randint(0,255), 255) #(random.random(), random.random(), random.random(), 1.0)
 			placeAgent(newKid, col)
 
-intolerance = 0.75
-brug = Bridge(intolerance)
+_sneakyResetFunction = initClassroom
 
 def checkForPotentialMover():
 	potMover	= prio.get()
@@ -101,7 +141,7 @@ def checkForPotentialMover():
 
 	similarNeighbours = 0
 	for similar in similars:
-		if similar == potMoverCol:
+		if math.dist(similar, potMoverCol) <= brug._similarity * 441.6729559300637:
 			similarNeighbours += 1
 
 	if len(similars) == 0:
@@ -118,8 +158,12 @@ def checkForPotentialMover():
 		#print(ratio)
 
 		#while not placeAgent(randomPosAtMaxDist(potMover), potMoverCol) and safety < 1000:
-		while not placeAgent(randomPos(), potMoverCol) and safety < 1000:
-			safety += 1
+		if brug.maxMigration <= 2.0:
+			while not placeAgent(randomPos(), potMoverCol) and safety < 1000:
+				safety += 1
+		else:
+			while not placeAgent(randomPosAtMaxDist(potMover, brug.maxMigration), potMoverCol) and safety < 1000:
+				safety += 1
 
 		if safety > 1000:
 			print("WTF")
