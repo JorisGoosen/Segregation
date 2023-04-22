@@ -102,8 +102,8 @@ Window
 			onMoved:	brug.maxMigration = maxMigrationSlider.value
 			width:		leftColumn.width
 			value:		brug.maxMigration
-			from:		0
-			to:			12
+			from:		-1
+			to:			30
 		}
 
 		Item

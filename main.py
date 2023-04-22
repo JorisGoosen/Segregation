@@ -123,64 +123,59 @@ def initClassroom():
 
 _sneakyResetFunction = initClassroom
 
+def countNeighboursIsItAGoodPlace(pos, posCol):
+	neighbours	= []
+	for relX in range(-1, 2):
+		for relY in range(-1, 2):
+			absX = pos[0] + relX
+			absY = pos[1] + relY
+			if absX >= 0 and absY >= 0 and absX < classroom.width and absY < classroom.height and not (relX == 0 and relY == 0):
+				neighbourColor = getColor((absX,absY))
+				if neighbourColor is not None:
+					neighbours.append(neighbourColor)
+
+	similarNeighbours = []
+	avgSimil = 0
+	for neighbour in neighbours:
+		if neighbour is None:
+			print("Neighbour is None...")
+			exit()
+
+		colDist = math.dist(neighbour, posCol) / 441.6729559300637
+		avgSimil += colDist
+
+		if math.dist(neighbour, posCol) / 441.6729559300637 < brug._similarity:
+			similarNeighbours.append(neighbour)
+
+	ratio = 0
+	if len(neighbours) > 0:
+		ratio = len(similarNeighbours) / len(neighbours)
+		avgSimil /= len(neighbours)
+
+	#return avgSimil < brug._similarity
+	return ratio > brug._intolerance and len(neighbours) > 2 #Maybe they want to have neighbours?or len(neighbours) == 0
+
 def checkForPotentialMover():
 	potMover	= prio.get()
 	potMoverCol = getColor(potMover)
 	if potMoverCol is None:
 		app.exit()
 
-	neighbours	= []
-	for relX in range(-1, 2):
-		for relY in range(-1, 2):
-			absX = potMover[0] + relX
-			absY = potMover[1] + relY
-			if absX >= 0 and absY >= 0 and absX < classroom.width and absY < classroom.height:#and not (relX == 0 and relY == 0):
-				neighbourColor = getColor((absX,absY))
-				if neighbourColor is not None:
-					neighbours.append(neighbourColor)
-
-	similarNeighbours = []
-	for neighbour in neighbours:
-		if False:
-			simDiff = (abs(neighbour[0]-potMoverCol[0])/ 255.0, abs(neighbour[1]-potMoverCol[1])/ 255.0, abs(neighbour[2]-potMoverCol[2])/ 255.0)
-			optieA = simDiff[0] < brug._similarity
-			optieB = simDiff[1] < brug._similarity
-			optieC = simDiff[2] < brug._similarity
-
-			subMod = 2.0
-			optieD = simDiff[0] < brug._similarity and ( simDiff[1] < brug._similarity * subMod or simDiff[2] < brug._similarity * subMod)
-			optieE = simDiff[1] < brug._similarity and ( simDiff[0] < brug._similarity * subMod or simDiff[2] < brug._similarity * subMod)
-			optieF = simDiff[2] < brug._similarity and ( simDiff[0] < brug._similarity * subMod or simDiff[1] < brug._similarity * subMod)
-
-			optieA = optieA or optieB or optieC
-			optieB = optieD or optieE or optieF
-
-			if optieA: #and not optieB:
-				similarNeighbours.append(neighbour)
-			#elif optieB:
-			#	similarNeighbours += 0.5
-		else:
-			if math.dist(neighbour, potMoverCol) / 441.6729559300637 < brug._similarity:
-				similarNeighbours.append(neighbour)
-
-	if len(neighbours) == 0:
-		#they might be lonely but they cant hate their neighbours cause they aint got any
-		#could be a nice place for extra functionality related to how crowded people want it to be around them
-		ratio = 0
-	else:
-		ratio = len(similarNeighbours) / len(neighbours)
-
-	if ratio < brug._intolerance and len(neighbours) > 0:
+	if not countNeighboursIsItAGoodPlace(potMover, potMoverCol):
 		#so this agent has decided to move!
 		tries = 0
-		maxTries = 10
+		maxTries = 100
 		placedIt = False
 
 		while tries < maxTries and not placedIt:
 			if brug.maxMigration <= 1.0:
-				placedIt = placeAgent(randomPos(), potMoverCol)
+				pos = randomPos()
 			else:
-				placedIt = placeAgent(randomPosAtMaxDist(potMover, brug.maxMigration), potMoverCol)
+				pos = randomPosAtMaxDist(potMover, brug.maxMigration)
+
+			placedIt = False
+			if countNeighboursIsItAGoodPlace(pos, potMoverCol) or tries > maxTries / 2:
+				placedIt = placeAgent(pos, potMoverCol)
 
 			if not placedIt:
 				tries += 1
