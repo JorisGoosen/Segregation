@@ -23,50 +23,112 @@ QML_IMPORT_MAJOR_VERSION = 1
 class Bridge(QObject):
 	def __init__(self, parent=None):
 		super().__init__(parent)
-		self._intolerance = 0.5
-		self._similarity = 0.333333
-		self._maxMigration = 0
-		self._maxKids = 0.5
+		self.__intolerance = 0.5
+		self.__similarity = 0.333333
+		self.__maxMigration = 0
+		self.__maxKids = 0.5
+		self.__classSize = 100
+		self.__blocky = True
+		self.__ratioRadius = 1
 
-	@Property('float')
-	def intolerance(self):
-		return self._intolerance
+	def _intolerance(self):
+		return self.__intolerance
 
+	def _similarity(self):
+		return self.__similarity
 
-	@Property('float')
-	def similarity(self):
-		return self._similarity
+	def _maxMigration(self):
+		return self.__maxMigration
 
-	@Property('float')
-	def maxMigration(self):
-		return self._maxMigration
+	def _maxKids(self):
+		return self.__maxKids
 
-	@Property('float')
-	def maxKids(self):
-		return self._maxKids
+	def _ratioRadius(self):
+		return self.__ratioRadius
 
-	@intolerance.setter
-	def intolerance(self, intolerance):
-		self._intolerance = intolerance
+	def _classSize(self):
+		return self.__classSize
 
-	@similarity.setter
-	def similarity(self, similarity):
-		self._similarity = similarity
+	def _blocky(self):
+		return self.__blocky
 
-	@maxMigration.setter
-	def maxMigration(self, maxMigration):
-		self._maxMigration = maxMigration
+	def setIntolerance(self, intolerance):
+		if intolerance != self.__intolerance:
+			self.__intolerance = intolerance
+			self.intoleranceChanged.emit()
 
-	@maxKids.setter
-	def maxKids(self, maxKids):
-		self._maxKids = maxKids
+	def setSimilarity(self, similarity):
+		if similarity != self.__similarity:
+			self.__similarity = similarity
+			self.similarityChanged.emit()
+
+	def setMaxMigration(self, maxMigration):
+		if maxMigration != self.__maxMigration:
+			self.__maxMigration = maxMigration
+			self.maxMigrationChanged.emit()
+
+	def setMaxKids(self, maxKids):
+		if maxKids != self.__maxKids:
+			self.__maxKids = maxKids
+			self.maxKidsChanged.emit()
+
+	def setRatioRadius(self, ratioRadius):
+		if ratioRadius != self.__ratioRadius:
+			self.__ratioRadius = ratioRadius
+			self.ratioRadiusChanged.emit()
+
+	def setClassSize(self, classSize):
+		if classSize != self.__classSize:
+			self.__classSize = classSize
+			self.classSizeChanged.emit()
+
+	def setBlocky(self, blocky):
+		if blocky != self.__blocky:
+			self.__blocky = blocky
+			self.blockyChanged.emit()
+
+	@Signal
+	def intoleranceChanged(self):
+		pass
+
+	@Signal
+	def similarityChanged(self):
+		pass
+
+	@Signal
+	def maxMigrationChanged(self):
+		pass
+
+	@Signal
+	def maxKidsChanged(self):
+		pass
+
+	@Signal
+	def ratioRadiusChanged(self):
+		pass
+
+	@Signal
+	def classSizeChanged(self):
+		pass
+
+	@Signal
+	def blockyChanged(self):
+		pass
+
+	intolerance		= Property(float,	_intolerance,	setIntolerance,		notify=intoleranceChanged	)
+	similarity		= Property(float,	_similarity,	setSimilarity,		notify=similarityChanged	)
+	maxMigration	= Property(float,	_maxMigration,	setMaxMigration,	notify=maxMigrationChanged	)
+	maxKids			= Property(float,	_maxKids,		setMaxKids,			notify=maxKidsChanged		)
+	ratioRadius		= Property(int,		_ratioRadius,	setRatioRadius,		notify=ratioRadiusChanged	)
+	classSize		= Property(int,		_classSize,		setClassSize,		notify=classSizeChanged		)
+	blocky			= Property(bool,	_blocky,		setBlocky,			notify=blockyChanged		)
 
 	@Slot()
 	def resetClass(self):
 		sneakyResetFunction()
 
 brug		= Bridge()
-classroom	= Image.new("RGBA", (128, 128), (0, 0, 0, 0))
+classroom	= Image.new("RGBA", (brug.classSize, brug.classSize), (0, 0, 0, 0))
 prio		= queue.Queue()
 
 
@@ -107,9 +169,9 @@ def randomPosAtMaxDist(posDist, distance=3):
 def initClassroom():
 	global classroom
 	global prio
-	classroom = Image.new("RGBA", (classroom.width, classroom.height), (0, 0, 0, 0))
+	classroom = Image.new("RGBA", (brug.classSize, brug.classSize), (0, 0, 0, 0))
 	prio = queue.Queue()
-	maxKids = (classroom.width * classroom.height) * brug._maxKids
+	maxKids = (classroom.width * classroom.height) * brug.maxKids
 	print(maxKids)
 	kiddos  = set()
 	while len(kiddos) < maxKids:
@@ -125,8 +187,8 @@ _sneakyResetFunction = initClassroom
 
 def countNeighboursIsItAGoodPlace(pos, posCol):
 	neighbours	= []
-	for relX in range(-1, 2):
-		for relY in range(-1, 2):
+	for relX in range(-1 * brug.ratioRadius, 1 + brug.ratioRadius):
+		for relY in range(-1 * brug.ratioRadius, 1 + brug.ratioRadius):
 			absX = pos[0] + relX
 			absY = pos[1] + relY
 			if absX >= 0 and absY >= 0 and absX < classroom.width and absY < classroom.height and not (relX == 0 and relY == 0):
@@ -144,7 +206,7 @@ def countNeighboursIsItAGoodPlace(pos, posCol):
 		colDist = math.dist(neighbour, posCol) / 441.6729559300637
 		avgSimil += colDist
 
-		if math.dist(neighbour, posCol) / 441.6729559300637 < brug._similarity:
+		if math.dist(neighbour, posCol) / 441.6729559300637 < brug.similarity:
 			similarNeighbours.append(neighbour)
 
 	ratio = 0
@@ -152,8 +214,8 @@ def countNeighboursIsItAGoodPlace(pos, posCol):
 		ratio = len(similarNeighbours) / len(neighbours)
 		avgSimil /= len(neighbours)
 
-	#return avgSimil < brug._similarity
-	return ratio > brug._intolerance and len(neighbours) > 2 #Maybe they want to have neighbours?or len(neighbours) == 0
+	#return avgSimil < brug.similarity
+	return ratio > brug.intolerance and len(neighbours) > 2 #Maybe they want to have neighbours?or len(neighbours) == 0
 
 def checkForPotentialMover():
 	potMover	= prio.get()
@@ -174,7 +236,7 @@ def checkForPotentialMover():
 				pos = randomPosAtMaxDist(potMover, brug.maxMigration)
 
 			placedIt = False
-			if countNeighboursIsItAGoodPlace(pos, potMoverCol) or tries > maxTries / 2:
+			if countNeighboursIsItAGoodPlace(pos, potMoverCol) or tries > maxTries * 0.9:
 				placedIt = placeAgent(pos, potMoverCol)
 
 			if not placedIt:

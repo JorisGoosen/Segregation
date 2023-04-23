@@ -24,7 +24,7 @@ Window
 		height:						parent.height
 		width:						height
 		anchors.horizontalCenter:	parent.horizontalCenter
-		smooth:						false
+		smooth:						!brug.blocky
 	}
 
 	Column
@@ -88,22 +88,56 @@ Window
 
 		Text
 		{
-			text:	"Max migration distance and density:"
+			text:	"Max migration and neighbor distance,\n and class settings, init & reset:"
 			color:	"yellow"
-			width:	left.width
+			width:	leftColumn.width
 			height:	contentHeight
 			horizontalAlignment: Text.AlignHCenter
 		}
 
-		Slider
+		Item
 		{
-			id:			maxMigrationSlider
-			height:		40
-			onMoved:	brug.maxMigration = maxMigrationSlider.value
 			width:		leftColumn.width
-			value:		brug.maxMigration
-			from:		-1
-			to:			30
+			height:		40
+			Slider
+			{
+				id:			maxMigrationSlider
+
+				onMoved:	brug.maxMigration = maxMigrationSlider.value
+
+				value:		brug.maxMigration
+				from:		-1
+				to:			30
+
+				anchors
+				{
+					top:		parent.top
+					bottom:		parent.bottom
+					left:		parent.left
+					right:		parent.horizontalCenter
+				}
+			}
+
+			Slider
+			{
+				id:			neighbourSlider
+
+				onMoved:	brug.ratioRadius = neighbourSlider.value
+
+				value:		brug.ratioRadius
+				from:		1
+				to:			3
+				stepSize:	1
+
+
+				anchors
+				{
+					top:		parent.top
+					bottom:		parent.bottom
+					right:		parent.right
+					left:		parent.horizontalCenter
+				}
+			}
 		}
 
 		Item
@@ -131,6 +165,49 @@ Window
 				value:		brug.maxKids
 				onMoved:	brug.maxKids = value
 			}
+		}
+
+		Item
+		{
+			height:		sizeSlider.implicitHeight
+			width:		leftColumn.width
+
+			Text
+			{
+				id:			sizeText
+				text:		brug.classSize
+				color:		"yellow"
+			}
+
+			Slider
+			{
+				id:			sizeSlider
+				anchors
+				{
+					top:	parent.top
+					bottom:	parent.bottom
+					right:	parent.right
+					left:	sizeText.right
+				}
+
+				value:		brug.classSize
+				onMoved:	brug.classSize = value
+				from:		4
+				to:			2048
+				stepSize:	1
+			}
+		}
+
+
+		CheckBox
+		{
+			id:			blockyCheck
+
+			width:	parent.width
+
+			checked:			brug.blocky
+			onCheckedChanged: 	brug.blocky = checked
+
 		}
 	}
 }
