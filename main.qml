@@ -99,15 +99,14 @@ Window
 		{
 			width:		leftColumn.width
 			height:		40
-			Slider
+			SpinBox
 			{
-				id:			maxMigrationSlider
-
-				onMoved:	brug.maxMigration = maxMigrationSlider.value
-
-				value:		brug.maxMigration
-				from:		-1
-				to:			30
+				id:				maxMigrationSlider
+				editable:		true
+				onValueChanged:	brug.maxMigration = maxMigrationSlider.value
+				value:			brug.maxMigration
+				from:			0
+				to:				classRoom.sourceSize.width
 
 				anchors
 				{
@@ -118,16 +117,16 @@ Window
 				}
 			}
 
-			Slider
+			SpinBox
 			{
-				id:			neighbourSlider
+				id:				neighbourSlider
+				editable:		true
+				onValueChanged:	brug.ratioRadius = neighbourSlider.value
 
-				onMoved:	brug.ratioRadius = neighbourSlider.value
-
-				value:		brug.ratioRadius
-				from:		1
-				to:			3
-				stepSize:	1
+				value:			brug.ratioRadius
+				from:			1
+				to:				6
+				stepSize:		1
 
 
 				anchors
@@ -154,56 +153,45 @@ Window
 
 			Slider
 			{
+				id:			maxKidsSlider
 				anchors
 				{
 					top:	resetKnop.top
 					bottom:	resetKnop.bottom
-					right:	parent.right
+					right:	sizeSlider.left
 					left:	resetKnop.right
 				}
 
 				value:		brug.maxKids
 				onMoved:	brug.maxKids = value
 			}
-		}
 
-		Item
-		{
-			height:		sizeSlider.implicitHeight
-			width:		leftColumn.width
-
-			Text
+			SpinBox
 			{
-				id:			sizeText
-				text:		brug.classSize
-				color:		"yellow"
-			}
-
-			Slider
-			{
-				id:			sizeSlider
+				id:				sizeSlider
+				editable:		true
 				anchors
 				{
-					top:	parent.top
-					bottom:	parent.bottom
-					right:	parent.right
-					left:	sizeText.right
+					top:		parent.top
+					bottom:		parent.bottom
+					right:		parent.right
 				}
 
-				value:		brug.classSize
-				onMoved:	brug.classSize = value
-				from:		4
-				to:			2048
-				stepSize:	1
+				value:			brug.classSize
+				onValueChanged:	brug.classSize = value
+				from:			4
+				to:				2048
+				stepSize:		1
 			}
 		}
 
 
 		CheckBox
 		{
-			id:			blockyCheck
+			id:					blockyCheck
 
-			width:	parent.width
+			width:				parent.width
+			height:				implicitHeight
 
 			checked:			brug.blocky
 			onCheckedChanged: 	brug.blocky = checked
